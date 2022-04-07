@@ -9,7 +9,7 @@ namespace Telegram1
     class Program
     {
         static TelegramBotClient bot;
-        static string token = "5281960744:AAFFVPcycBwqmnL1FALgwqS2MPMIVotsN6A";
+        static string token = "";
 
         static void Main(string[] args)
         {
