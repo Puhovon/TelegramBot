@@ -15,7 +15,7 @@ namespace Telegram1
         {
 
 
-            #region exc
+            #region
 
             //// https://hidemyna.me/ru/proxy-list/?maxtime=250#list
 
