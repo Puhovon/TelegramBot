@@ -12,7 +12,7 @@ namespace TelegBot
     class Program
     {
         static TelegramBotClient bot;
-        static string token = "5231816245:AAE06GBsraf_BUDeLeNelCUKXpRdBIJdzWE";
+        static string token = "";
         static string APIKeyWeather = "";
         static float Temp;
         static string nameOfCity;
