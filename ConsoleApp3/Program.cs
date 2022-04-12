@@ -1,24 +1,25 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegBot
 {
+    
     class Program
     {
         static TelegramBotClient bot;
         static string token = "";
-        
+        static string APIKeyWeather = "";
         static string CityName;
         static float Temp;
         static string nameOfCity;
-
-        
+        static bool current;
+            
 
         static void Main(string[] args)
         {
@@ -55,68 +56,182 @@ namespace TelegBot
 
         private static async void MessageListener(object sender, Telegram.Bot.Args.MessageEventArgs e)
         {
+  
             var msg = e.Message;
+            var messageText = e.Message.Text;
+            if(msg.Text == "/start") 
+            {
+            await bot.SendTextMessageAsync(msg.Chat.Id, $"Доброго времени суток, {msg.Chat.FirstName}! Это мой первый телеграмм бот написанный на C#");
+            await bot.SendTextMessageAsync(msg.Chat.Id,
+                "Если вы хотите узнать как пользоваться ботом, нажмите /help"
+                );
+            }
+            else if(msg.Text == "/help")
+            {
+                await bot.SendTextMessageAsync(msg.Chat.Id, $"И так, {msg.Chat.FirstName}, если ты хочешь узнать погоду, то напиши <Погода Название города>\n" +
+                    $"Так же этот бот может сохранять файлы которые вы отправите\n" +
+                    "/GetFiles");
+            }
 
+
+            if (msg.Text == "/GetFiles")
+            {
+                await bot.SendTextMessageAsync(msg.Chat.Id,"/Download название файла, чтобы скачать его");
+                FindFilesDir(msg.Chat.Id.ToString(), msg);
+                if (msg.Text.Contains("/Download"))
+                {
+                    try
+                    {
+                        string[] splitStr = msg.Text.Split(' ');
+                        string FileName = splitStr[1];
+                        GetFile(FileName,msg);
+                    }
+                    catch (Exception ex)
+                    {
+                        await bot.SendTextMessageAsync(msg.Chat.Id,"Неверное название файла");
+                    }
+
+                }
+            }
+            
+            else
+            {
+                if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Document)
+                {
+                    Console.WriteLine(e.Message.Document.FileId);
+                    Console.WriteLine(e.Message.Document.FileName);
+                    Console.WriteLine(e.Message.Document.FileSize);
+
+                    DownloadFile(e.Message.Document.FileId, e.Message.Document.FileName, msg);
+                }
+                else if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Photo)
+                {
+                    Console.WriteLine(e.Message.MessageId.ToString());
+                    Console.WriteLine(e.Message.Photo);
+                    DownloadFile(e.Message.Photo[e.Message.Photo.Length - 1].FileId.ToString(), $"{e.Message.MessageId.ToString()}.jpg", msg);
+                }
+                else if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Audio)
+                {
+                    Console.WriteLine(e.Message.MessageId.ToString());
+                    Console.WriteLine(e.Message.Audio.FileName.ToString());
+                    DownloadFile("id", $".mp3", msg);
+                }
+                else if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Video)
+                {
+                    Console.WriteLine(e.Message.Video.FileId);
+                    Console.WriteLine(e.Message.Video.FileName);
+                    Console.WriteLine(e.Message.Video.FileSize);
+
+                    DownloadFile(e.Message.Video.FileId, e.Message.Video.FileName, msg);
+                }
+            }
+            if (e.Message.Text == null) return;
+            if (msg.Text.Contains("Погода"))
+            { 
+                string[] s = messageText.Split(' ');
+                CityName = s[1];
+                FindCityWeather(CityName, msg);
+                await bot.SendTextMessageAsync(msg.Chat.Id, $"Температура в {CityName}: {Math.Round(Temp)} градусов.");
+            }
             string text = $"{DateTime.Now.ToLongTimeString()}: {e.Message.Chat.FirstName} {e.Message.Chat.Id} {e.Message.Text}";
 
             Console.WriteLine($"{text} TypeMessage: {e.Message.Type.ToString()}");
-
-            await bot.SendTextMessageAsync(msg.Chat.Id, msg.Text, replyMarkup: GetButtons());
-
-            if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Document)
-            {
-                Console.WriteLine(e.Message.Document.FileId);
-                Console.WriteLine(e.Message.Document.FileName);
-                Console.WriteLine(e.Message.Document.FileSize);
-
-                DownloadFile(e.Message.Document.FileId, e.Message.Document.FileName);
-            }
-            else if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Photo)
-            {
-                Console.WriteLine(e.Message.MessageId.ToString());
-                Console.WriteLine(e.Message.Photo);
-                DownloadFile(e.Message.Photo[e.Message.Photo.Length - 1].FileId.ToString(), $"{e.Message.MessageId.ToString()}.jpg");
-            }
-            else if(e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Audio)
-            {
-                Console.WriteLine(e.Message.MessageId.ToString());
-                Console.WriteLine(e.Message.Audio.FileName.ToString());
-                DownloadFile("id", $".mp3");
-            }
-            if (e.Message.Text == null) return;
-
-            var messageText = e.Message.Text;
-            switch (e.Message.Text)
-            {
-                case "Погода":
-                    await bot.SendTextMessageAsync(msg.Chat.Id,
-                        "Напишите название города");
-                    if (e.Message.Text == null) return;
-                    else
-                    {
-                        nameOfCity = e.Message.Text;
-                        FindCityWeather(sender, e);
-                    }
-                    await bot.SendTextMessageAsync(msg.Chat.Id, $"Температура в {CityName}: {Math.Round(Temp)} градусов.");
-                    break;
-                case "Скинуть файл":
-                    await bot.SendTextMessageAsync(msg.Chat.Id,
-                        "Просто отправьте файл");
-                break;
-                case "Скачать файл":
-                    await bot.SendTextMessageAsync(msg.Chat.Id,
-                        "Пока что не доступно");
-                    break;
-            }
-
+           
         }
 
-        private static async void FindCityWeather(object sender, Telegram.Bot.Args.MessageEventArgs e)
+        private static async void GetFile(string fileName,Message msg)
         {
-            CityName = e.Message.Text;
+            string path = $@"E:\TeleFiles\{msg.Chat.Id}\{fileName}";
+            DirectoryInfo dir = new DirectoryInfo(path);
+            if (dir.Exists)
+            {
+                using(var stream = System.IO.File.Open(path, FileMode.Open))
+                {
+                    try
+                    {
+                        await bot.SendDocumentAsync(msg.Chat.Id, stream);
+                        await bot.SendTextMessageAsync(msg.Chat.Id, "успешно");
+                    }
+                    catch (Exception ex)
+                    {
+                        await bot.SendTextMessageAsync(msg.Chat.Id, $"Error: {ex.Message}");
+
+                    }
+                   
+                }
+            }
+        }
+
+        //switch (e.Message.Text)
+        //{
+        //    case "Погода":
+        //        break;
+        //    case "Скинуть файл":
+        //        await bot.SendTextMessageAsync(msg.Chat.Id,
+        //            "Просто отправьте файл");
+        //    break;
+        //    case "Скачать файл":
+        //        await bot.SendTextMessageAsync(msg.Chat.Id,
+        //            "Пока что не доступно");
+        //        break;
+        //}
+
+
+        private static async void FindFilesDir(string ChatId, Message msg)
+        {
+            string path = $@"E:\TeleFiles\{ChatId}";
+            DirectoryInfo dir = new DirectoryInfo(path);
+            if (!dir.Exists)
+            {
+                bot.SendTextMessageAsync(msg.Chat.Id, "Вы ещё ничего не отправляли");
+            }
+            else
+            {
+                FileInfo[] files = dir.GetFiles();
+                //FillStringDir(path);
+                string str = "";
+                foreach (FileInfo file in files)
+                {
+                    str += $"\n{file.Name}";
+                }
+                await bot.SendTextMessageAsync(msg.Chat.Id,"Ваши файлы:" + str);
+                
+            }
+            
+            
+        }
+
+        private static void SendFileFromDir(string FileName)
+        {
+            
+        }
+
+
+
+        //        private static IReplyMarkup GetInlineKeyboardButton()
+        //        {
+        //        var keyboard = new InlineKeyboardMarkup(new[]
+        //{
+        //    new []
+        //    {
+        //        InlineKeyboardButton.WithCallbackData("Weather"),
+        //    },
+        //});
+        //            return keyboard;
+        //        }
+        //private static async void CheckDirectoryWithFiles()
+        //{
+        //    DirectoryInfo dr = new DirectoryInfo("")
+        //    {
+
+        //    };
+        //}
+        private static async void FindCityWeather(string CityName, Message msg)
+        {
+            
             try
             {
-                string url = "https://api.openweathermap.org/data/2.5/weather?id=" + CityName + "&appid={e2c3c78a4f3b7df11f8b0907abb036ad}";
+                string url =$"https://api.openweathermap.org/data/2.5/weather?q={CityName}&units=metric&appid=e2c3c78a4f3b7df11f8b0907abb036ad";
                 HttpWebRequest httpRequest= (HttpWebRequest)WebRequest.Create(url);
                 HttpWebResponse httpResponse = (HttpWebResponse)httpRequest?.GetResponse();
                 string response;
@@ -129,44 +244,43 @@ namespace TelegBot
                 WeatherResponse weatherResponse = JsonConvert.DeserializeObject<WeatherResponse>(response);
 
                 nameOfCity = weatherResponse.Name;
-                Temp = weatherResponse.Main.Temp - 273;
+                Temp = weatherResponse.Main.Temp;
             }
-            catch (System.Net.WebException)
+            catch (WebException)
             {
+               await bot.SendTextMessageAsync(msg.Chat.Id, "Неверное название города");
                 Console.WriteLine("Неверное название города");
                 return;
             }
         }
 
-        private static IReplyMarkup GetButtons()
-        {
-            return new ReplyKeyboardMarkup
-            {
-                Keyboard = new List<List<KeyboardButton>>
-                {
-                    new List<KeyboardButton>{ new KeyboardButton { Text = "Погода" }, new KeyboardButton { Text = "Скинуть файл" } },
-                    new List<KeyboardButton>{ new KeyboardButton { Text ="Скачать файл"} }
-                }
-            };
-        }
 
-        private static async void DownloadFile(string fileId, string path)
+
+        private static async void DownloadFile(string fileId, string path, Message msg)
         {
+
             try
             {
+                DirectoryInfo dir = new DirectoryInfo(@"E:\TeleFiles\"+$"{msg.Chat.Id}");
+                if (!dir.Exists)
+                {
+                    dir.Create();
+                }
                 var file = await bot.GetFileAsync(fileId);
-                FileStream fs = new FileStream("_" + path, FileMode.Create);
+                FileStream fs = new FileStream($@"E:\TeleFiles\{msg.Chat.Id}\" + $"_{path}", FileMode.Create);
                 await bot.DownloadFileAsync(file.FilePath, fs);
                 fs.Close();
 
                 fs.Dispose();
-                
+                await bot.SendTextMessageAsync(msg.Chat.Id, "Установка успешно завершена");
             }
             catch (Exception ex)
             {
+                await bot.SendTextMessageAsync(msg.Chat.Id, "Ошибка\n" +
+                   $"{ex.Message}");
                 Console.WriteLine("Error downloading: " + ex.Message);
+
             }
-            
         }
     }
 }
