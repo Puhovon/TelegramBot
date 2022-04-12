@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegBot
 {
@@ -13,12 +12,10 @@ namespace TelegBot
     class Program
     {
         static TelegramBotClient bot;
-        static string token = "";
+        static string token = "5231816245:AAE06GBsraf_BUDeLeNelCUKXpRdBIJdzWE";
         static string APIKeyWeather = "";
-        static string CityName;
         static float Temp;
         static string nameOfCity;
-        static bool current;
             
 
         static void Main(string[] args)
@@ -90,7 +87,6 @@ namespace TelegBot
                     {
                         await bot.SendTextMessageAsync(msg.Chat.Id,"Неверное название файла");
                     }
-
                 }
             }
             
@@ -161,29 +157,13 @@ namespace TelegBot
                 }
             }
         }
-
-        //switch (e.Message.Text)
-        //{
-        //    case "Погода":
-        //        break;
-        //    case "Скинуть файл":
-        //        await bot.SendTextMessageAsync(msg.Chat.Id,
-        //            "Просто отправьте файл");
-        //    break;
-        //    case "Скачать файл":
-        //        await bot.SendTextMessageAsync(msg.Chat.Id,
-        //            "Пока что не доступно");
-        //        break;
-        //}
-
-
         private static async void FindFilesDir(string ChatId, Message msg)
         {
             string path = $@"E:\TeleFiles\{ChatId}";
             DirectoryInfo dir = new DirectoryInfo(path);
             if (!dir.Exists)
             {
-                bot.SendTextMessageAsync(msg.Chat.Id, "Вы ещё ничего не отправляли");
+               await bot.SendTextMessageAsync(msg.Chat.Id, "Вы ещё ничего не отправляли");
             }
             else
             {
@@ -200,32 +180,10 @@ namespace TelegBot
             
             
         }
-
         private static void SendFileFromDir(string FileName)
         {
             
         }
-
-
-
-        //        private static IReplyMarkup GetInlineKeyboardButton()
-        //        {
-        //        var keyboard = new InlineKeyboardMarkup(new[]
-        //{
-        //    new []
-        //    {
-        //        InlineKeyboardButton.WithCallbackData("Weather"),
-        //    },
-        //});
-        //            return keyboard;
-        //        }
-        //private static async void CheckDirectoryWithFiles()
-        //{
-        //    DirectoryInfo dr = new DirectoryInfo("")
-        //    {
-
-        //    };
-        //}
         private static async void FindCityWeather(string CityName, Message msg)
         {
             
