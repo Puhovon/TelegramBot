@@ -14,8 +14,10 @@ namespace TelegBot
         static TelegramBotClient bot;
         static string token = "";
         static string APIKeyWeather = "";
+        static string CityName;
         static float Temp;
         static string nameOfCity;
+        static bool current;
             
 
         static void Main(string[] args)
