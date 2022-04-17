@@ -8,17 +8,14 @@ using Telegram.Bot.Types;
 
 namespace TelegBot
 {
-    
+
     class Program
     {
         static TelegramBotClient bot;
-        static string token = "";
-        static string APIKeyWeather = "";
+        static string token = "5231816245:AAE06GBsraf_BUDeLeNelCUKXpRdBIJdzWE";
         static string CityName;
         static float Temp;
         static string nameOfCity;
-        static bool current;
-            
 
         static void Main(string[] args)
         {
@@ -55,17 +52,17 @@ namespace TelegBot
 
         private static async void MessageListener(object sender, Telegram.Bot.Args.MessageEventArgs e)
         {
-  
+
             var msg = e.Message;
             var messageText = e.Message.Text;
-            if(msg.Text == "/start") 
+            if (msg.Text == "/start")
             {
-            await bot.SendTextMessageAsync(msg.Chat.Id, $"Доброго времени суток, {msg.Chat.FirstName}! Это мой первый телеграмм бот написанный на C#");
-            await bot.SendTextMessageAsync(msg.Chat.Id,
-                "Если вы хотите узнать как пользоваться ботом, нажмите /help"
-                );
+                await bot.SendTextMessageAsync(msg.Chat.Id, $"Доброго времени суток, {msg.Chat.FirstName}! Это мой первый телеграмм бот написанный на C#");
+                await bot.SendTextMessageAsync(msg.Chat.Id,
+                    "Если вы хотите узнать как пользоваться ботом, нажмите /help"
+                    );
             }
-            else if(msg.Text == "/help")
+            else if (msg.Text == "/help")
             {
                 await bot.SendTextMessageAsync(msg.Chat.Id, $"И так, {msg.Chat.FirstName}, если ты хочешь узнать погоду, то напиши <Погода Название города>\n" +
                     $"Так же этот бот может сохранять файлы которые вы отправите\n" +
@@ -75,23 +72,12 @@ namespace TelegBot
 
             if (msg.Text == "/GetFiles")
             {
-                await bot.SendTextMessageAsync(msg.Chat.Id,"/Download название файла, чтобы скачать его");
+                await bot.SendTextMessageAsync(msg.Chat.Id, "/Download название файла, чтобы скачать его");
                 FindFilesDir(msg.Chat.Id.ToString(), msg);
-                if (msg.Text.Contains("/Download"))
-                {
-                    try
-                    {
-                        string[] splitStr = msg.Text.Split(' ');
-                        string FileName = splitStr[1];
-                        GetFile(FileName,msg);
-                    }
-                    catch (Exception ex)
-                    {
-                        await bot.SendTextMessageAsync(msg.Chat.Id,"Неверное название файла");
-                    }
-                }
+
             }
-            
+
+
             else
             {
                 if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Document)
@@ -123,9 +109,31 @@ namespace TelegBot
                     DownloadFile(e.Message.Video.FileId, e.Message.Video.FileName, msg);
                 }
             }
-            if (e.Message.Text == null) return;
+            if (e.Message.Text == null)
+            {
+                return;
+            }
+
+            if (msg.Text.Contains("/Download"))
+            {
+                try
+                {
+                    string[] splitStr = msg.Text.Split(' ');
+                    string FileName = splitStr[1];
+                    foreach (var s in splitStr)
+                    {
+                        Console.WriteLine(s);
+                    }
+                    Console.WriteLine(FileName);
+                    SendFileFromDir(FileName, msg);
+                }
+                catch (Exception ex)
+                {
+                    await bot.SendTextMessageAsync(msg.Chat.Id, "Неверное название файла");
+                }
+            }
             if (msg.Text.Contains("Погода"))
-            { 
+            {
                 string[] s = messageText.Split(' ');
                 CityName = s[1];
                 FindCityWeather(CityName, msg);
@@ -134,38 +142,51 @@ namespace TelegBot
             string text = $"{DateTime.Now.ToLongTimeString()}: {e.Message.Chat.FirstName} {e.Message.Chat.Id} {e.Message.Text}";
 
             Console.WriteLine($"{text} TypeMessage: {e.Message.Type.ToString()}");
-           
+
         }
 
-        private static async void GetFile(string fileName,Message msg)
-        {
-            string path = $@"E:\TeleFiles\{msg.Chat.Id}\{fileName}";
-            DirectoryInfo dir = new DirectoryInfo(path);
-            if (dir.Exists)
-            {
-                using(var stream = System.IO.File.Open(path, FileMode.Open))
-                {
-                    try
-                    {
-                        await bot.SendDocumentAsync(msg.Chat.Id, stream);
-                        await bot.SendTextMessageAsync(msg.Chat.Id, "успешно");
-                    }
-                    catch (Exception ex)
-                    {
-                        await bot.SendTextMessageAsync(msg.Chat.Id, $"Error: {ex.Message}");
+        //private static async void GetFile(string fileName, Message msg)
+        //{
+        //    string path = $@"E:\TeleFiles\{msg.Chat.Id}\{fileName}";
+        //    DirectoryInfo dir = new DirectoryInfo(path);
+        //    var file = await bot.GetFileAsync(path);
 
-                    }
-                   
-                }
-            }
-        }
+        //    if (dir.Exists)
+        //    {
+        //        try
+        //        {
+        //            using (Stream stream = new FileStream(path, FileMode.Open))
+        //            {
+        //                await bot.SendPhotoAsync(msg.Chat.Id, stream,file);
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        { 
+        //            await bot.SendTextMessageAsync(msg.Chat.Id, $"{ex.Message}");
+        //        }
+        //        //using(var stream = System.IO.File.Open(path, FileMode.Open))
+        //        //{
+        //        //    try
+        //        //    {
+        //        //        await bot.SendDocumentAsync(msg.Chat.Id, stream);
+        //        //        await bot.SendTextMessageAsync(msg.Chat.Id, "успешно");
+        //        //    }
+        //        //    catch (Exception ex)
+        //        //    {
+        //        //        await bot.SendTextMessageAsync(msg.Chat.Id, $"Error: {ex.Message}");
+
+        //        //    }
+        //    }
+
+
+
         private static async void FindFilesDir(string ChatId, Message msg)
         {
             string path = $@"E:\TeleFiles\{ChatId}";
             DirectoryInfo dir = new DirectoryInfo(path);
             if (!dir.Exists)
             {
-               await bot.SendTextMessageAsync(msg.Chat.Id, "Вы ещё ничего не отправляли");
+                await bot.SendTextMessageAsync(msg.Chat.Id, "Вы ещё ничего не отправляли");
             }
             else
             {
@@ -176,27 +197,51 @@ namespace TelegBot
                 {
                     str += $"\n{file.Name}";
                 }
-                await bot.SendTextMessageAsync(msg.Chat.Id,"Ваши файлы:" + str);
-                
+                await bot.SendTextMessageAsync(msg.Chat.Id, "Ваши файлы:" + str);
+
             }
-            
-            
         }
-        private static void SendFileFromDir(string FileName)
+        private static async void SendFileFromDir(string FileName, Message msg)
         {
-            
+            string path = $@"E:\TeleFiles\{msg.Chat.Id}\";
+            DirectoryInfo dir = new DirectoryInfo(path);
+            FileInfo[] fg = dir.GetFiles();
+            try
+            {
+                string[] TypeFile = FileName.Split('.');
+                using (Stream fs = new FileStream($@"{path}{FileName}", FileMode.Open))
+                {
+                    if (TypeFile[1] == "jpg")
+                    {
+                        await bot.SendPhotoAsync(msg.Chat.Id, fs, "");
+                    }
+                    else if (TypeFile[1] == "MP4")
+                    {
+                        await bot.SendVideoAsync(msg.Chat.Id, fs);
+                    }
+                    else
+                    {
+                        await bot.SendDocumentAsync(msg.Chat.Id, fs, "");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await bot.SendTextMessageAsync(msg.Chat.Id, $"Error: {ex.Message}");
+
+            }
         }
         private static async void FindCityWeather(string CityName, Message msg)
         {
-            
+
             try
             {
-                string url =$"https://api.openweathermap.org/data/2.5/weather?q={CityName}&units=metric&appid=e2c3c78a4f3b7df11f8b0907abb036ad";
-                HttpWebRequest httpRequest= (HttpWebRequest)WebRequest.Create(url);
+                string url = $"https://api.openweathermap.org/data/2.5/weather?q={CityName}&units=metric&appid=e2c3c78a4f3b7df11f8b0907abb036ad";
+                HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
                 HttpWebResponse httpResponse = (HttpWebResponse)httpRequest?.GetResponse();
                 string response;
 
-                using(StreamReader reader = new StreamReader(httpResponse.GetResponseStream()))
+                using (StreamReader reader = new StreamReader(httpResponse.GetResponseStream()))
                 {
                     response = reader.ReadToEnd();
                 }
@@ -208,7 +253,7 @@ namespace TelegBot
             }
             catch (WebException)
             {
-               await bot.SendTextMessageAsync(msg.Chat.Id, "Неверное название города");
+                await bot.SendTextMessageAsync(msg.Chat.Id, "Неверное название города");
                 Console.WriteLine("Неверное название города");
                 return;
             }
@@ -221,7 +266,7 @@ namespace TelegBot
 
             try
             {
-                DirectoryInfo dir = new DirectoryInfo(@"E:\TeleFiles\"+$"{msg.Chat.Id}");
+                DirectoryInfo dir = new DirectoryInfo(@"E:\TeleFiles\" + $"{msg.Chat.Id}");
                 if (!dir.Exists)
                 {
                     dir.Create();
